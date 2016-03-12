@@ -1,4 +1,3 @@
-
 // radius -> compact support radius
 // position -> position where to calculate kernel value
 // particle -> particle for which kernel is being calculated

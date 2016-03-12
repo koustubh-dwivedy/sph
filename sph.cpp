@@ -31,6 +31,7 @@
 #include <math.h>
 #include <iostream>
 #include "includes/include.h"
+#include "includes/hash.h"
 
 using namespace std;
 
@@ -51,9 +52,10 @@ int main(int argv, char ** argc){
 	const float d = 10;
 	const float c = 6;
 	const float w = 10;
-	const float particle_factor = 10;
+	const float particle_factor = 5;
 	const int number_of_particles = b*c*w*particle_factor*particle_factor*particle_factor; // 40*60*100 ~ b*c*w
 	const float mass = density*b*c*w/float(number_of_particles);
+	const int table_size = NextPrime(2*number_of_particles);
 	////
 
 	//// Creating n particles and setting their initial positions, velocities and mass
@@ -85,6 +87,33 @@ int main(int argv, char ** argc){
 	// x has been hard-coded as 13
 	float compact_support_radius = pow(3*b*c*w*13/(4*M_PI*number_of_particles),1/3.);
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	/****freeing up memory*******/
+	for(int i=0; i<b*particle_factor; i++){
+		for(int j=0; j<c*particle_factor; j++){
+			delete(particles[i][j]);
+		}
+		delete(particles[i]);
+	}
+	delete(particles);
+	/****freeing up memory*******/
 		
 }
 
