@@ -1,37 +1,9 @@
-//// 	WE ARE SIMULATING A DAM BREAK
-	/*
-	http://www.ijser.org/paper/Simulation-of-Dam-Break-Using-Modified-Incompressible-Smoothed/Image_034.jpg
-	
-		****w corresponds to depth****
-	\						\
-	\						\
-	\ <-b->					\
-	\\\\\\\\\				\
-	\		\ 				\  |
-	\		\ |				\  d
-	\		\ c				\  |
-	\		\ |				\
-	\		\ 				\
-	\		\				\
-	\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
-			<--a-->
-
-			!!!!!This does not follow vector right hand rule!!!!!
-			y     z
-			|   /
-			|  /
-			| /
-			--->x
-
-	*/
-////
-
 #include <stdio.h>
 #include <CL/cl.h>
 #include <math.h>
 #include <iostream>
-#include "includes/include.h"
-#include "includes/hash.h"
+#include "include.h"
+#include "hash.h"
 
 using namespace std;
 
@@ -41,23 +13,6 @@ int main(int argv, char ** argc){
 	/********
 	Initializing SPH System
 	********/
-	//// Environment Parameters
-	const float gravity = 9.81;
-	const float time_step = 0.01;
-	const float temperature =  283.15;
-	const int atm_pressure = 101325;
-	const float density = 1000;
-	const float a  = 10;
-	const float b = 4;
-	const float d = 10;
-	const float c = 6;
-	const float w = 10;
-	const float particle_factor = 5;
-	const int number_of_particles = b*c*w*particle_factor*particle_factor*particle_factor; // 40*60*100 ~ b*c*w
-	const float mass = density*b*c*w/float(number_of_particles);
-	const int table_size = NextPrime(2*number_of_particles);
-	////
-
 	//// Creating n particles and setting their initial positions, velocities and mass
 	float**** particles = new float***[int(b*particle_factor)];
 	for(int i=0; i<b*particle_factor; i++){
