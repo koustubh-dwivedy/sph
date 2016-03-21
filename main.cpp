@@ -3,16 +3,16 @@
 	http://www.ijser.org/paper/Simulation-of-Dam-Break-Using-Modified-Incompressible-Smoothed/Image_034.jpg
 	
 		****w corresponds to depth****
-	\						\
-	\						\
-	\ <-b->					\
-	\\\\\\\\\				\
-	\		\ 				\  |
-	\		\ |				\  d
-	\		\ c				\  |
-	\		\ |				\
-	\		\ 				\
-	\		\				\
+	\										\
+	\										\
+	\ <-b->									\
+	\\\\\\\\\								\
+	\		\ 								\  |
+	\		\ |								\  d
+	\		\ c								\  |
+	\		\ |								\
+	\		\ 								\
+	\		\								\
 	\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 			<--a-->
 
@@ -29,27 +29,24 @@
 #include "includes/sph.h"
 
 int main(int argc, char **argv){
-	//Create an array containing x, y, z coordinated of particles and pass it on to sph() function
-	//CLASS -> environment
-	//environment contains the following parameters
-	
-	// gravity = 9.81;
-	// time_step = 0.01;
-	// temperature =  283.15;
-	// atm_pressure = 101325;
-	// density = 1000;
-	// a  = 10;
-	// b = 4;
-	// d = 10;
-	// c = 6;
-	// w = 10;
-	// particle_factor = 5;
-	// number_of_particles = b*c*w*particle_factor*particle_factor*particle_factor; // 40*60*100 ~ b*c*w
-	// mass = density*b*c*w/float(number_of_particles);
-	// table_size = NextPrime(2*number_of_particles);
+	int part[3] = {20, 30, 50};
+	float**** particles;
+	//Define your particles here
 
-	//environment contains the following methods
-
-	//sph
-	
+	environment environ1;
+	environ1.gravity(9.81);
+	environ1.time_step(0.01);
+	environ1.temperature(283.15);
+	environ1.atmosphericPressure(101325);
+	environ1.density(1000);
+	environ1.numParticles(part);
+	environ1.fluidVolume(4*6*10);
+	environ1.environmentLength(10);
+	environ1.environmentHeight(10);
+	environ1.environmentWidth(10);
+	environ1.addParticles(particles);
+	environ1.envInit();
+	environ1.simulate();
+	environ1.environmentFree();
+	delete(part);//this is needed to be done manually	
 }
