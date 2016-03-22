@@ -1,9 +1,28 @@
-#include <stdio.h>
-#include <CL/cl.h>
-#include <math.h>
-#include <iostream>
-#include "include.h"
 #include "hash.h"
+#include "kernels.cpp"
+#include "prime.cpp"
+#include <iostream>
+#include <CL/cl.h>
+
+float default_kernel(float position[3], float particle[6], float radius);
+void default_kernel_gradient(float position[3], float particle[6], float radius, float* receiver);
+float default_kernel_laplacian(float position[3], float particle[6], float radius);
+float pressure_kernel(float position[3], float particle[6], float radius);
+void pressure_kernel_gradient(float position[3], float particle[6], float radius, float* receiver);
+float pressure_kernel_laplacian(float position[3], float particle[6], float radius);
+float viscosity_kernel(float position[3], float particle[6], float radius);
+void viscosity_kernel_gradient(float position[3], float particle[6], float radius, float* receiver);
+float viscosity_kernel_laplacian(float position[3], float particle[6], float radius);
+
+bool IsPrime(int number);
+int NextPrime(int a);
+
+
+
+
+
+
+
 
 class environment
 {
@@ -56,7 +75,7 @@ public:
 		mass = 0;
 		table_size = 0;
 	}
-	void gravity(float gvt){
+	void setGravity(float gvt){
 		if(gvt >= 0){
 			gravity = gvt;
 		}
@@ -64,7 +83,7 @@ public:
 			std::cout << "Please enter a valid gravity value. gravity has to be >=0.\n";
 		}
 	}
-	void time_step(float stp){
+	void setTimeStep(float stp){
 		if(stp > 0){
 			time_step = stp;
 		}
@@ -72,7 +91,7 @@ public:
 			std::cout << "Please enter a valid time_step value. time_step has to be >0.\n";
 		}
 	}
-	void temperature(float temp){
+	void setTemperature(float temp){
 		if(temp >= 0){
 			temperature = temp;
 		}
@@ -80,7 +99,7 @@ public:
 			std::cout << "Please enter a valid temperature value. temperature has to be >=0.\n";
 		}
 	}
-	void atmosphericPressure(long int atm_pr){
+	void setAtmosphericPressure(long int atm_pr){
 		if(atm_pr >= 0){
 			atm_pressure = atm_pr;
 		}
@@ -88,7 +107,7 @@ public:
 			std::cout << "Please enter a valid atmospheric_pressure value. atmospheric_pressure has to be >=0.\n";
 		}
 	}
-	void density(float dens){
+	void setDensity(float dens){
 		if(dens > 0){
 			density = dens;
 		}
@@ -180,7 +199,7 @@ public:
 		}
 	}
 	void simulate();
-	void environmentFree(void){		
+	void environmentFree(){		
 		/****freeing up memory*******/
 		for(int i=0; i<number_of_particles_array[0]; i++){
 			for(int j=0; j<number_of_particles_array[1]; j++){
@@ -195,3 +214,33 @@ public:
 		/****freeing up memory*******/
 	}
 };
+
+
+
+
+
+
+
+void environment::simulate(){
+	if(ready == 1){
+
+		//// Initialize the smoothing kernels using (5.14) to compute the compact support radius
+		// x has been hard-coded as 13
+		
+
+
+
+		//float compact_support_radius = pow(3*b*c*w*13/(4*M_PI*number_of_particles),1/3.);
+
+
+
+
+
+
+
+
+
+
+
+	}
+}
