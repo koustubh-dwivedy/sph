@@ -24,24 +24,20 @@ private:
 	// another tag of "isParticle" needs to be added in the ****particles to specify if that point is a particle or not.
 	// enter number_of_particles_array as [x, y, z]
 	/*
-				!!!!!This does not follow vector right hand rule!!!!!
-			y     z
-			|   /
-			|  /
-			| /
-			--->x
+		  z|   /y
+		   |  /
+		   | /
+		   |/_____x
 	*/
 	float mass;
 	int table_size;
 	float**** particles;
 	// construct particles as ->
 	/*
-				!!!!!This does not follow vector right hand rule!!!!!
-			y     z
-			|   /
-			|  /
-			| /
-			--->x
+		  z|   /y
+		   |  /
+		   | /
+		   |/_____x
 	*/
 	float volume_of_fluid;
 	bool ready;
@@ -56,7 +52,7 @@ public:
 		a = 0;
 		d = 0;
 		w = 0;
-		number_of_particles = 0;//b*c*w*particle_factor*particle_factor*particle_factor;
+		number_of_particles = 0;
 		mass = 0;
 		table_size = 0;
 	}
@@ -99,20 +95,17 @@ public:
 		else{
 			std::cout << "Please enter a valid density value. density has to be >=0.\n";
 		}
-	}
-
-		
-	void numParticles(int* num){
-		int temp;
-		number_of_particles_array = num;
-		temp = number_of_particles_array[0]*number_of_particles_array[1]*number_of_particles_array[2];
-
-		if(temp > 0){
-			number_of_particles = temp;
+	}		
+	void numParticles(int num){
+		if(num > 0){
+			number_of_particles = num;
 		}
 		else{
 			std::cout << "Please enter a valid numParticles value. numParticles has to be >0.\n";
 		}
+	}
+	void particlesDimen(int* a){
+		number_of_particles_array = a;
 	}
 	void fluidVolume(float vol){
 		if(vol > 0){
@@ -191,6 +184,9 @@ public:
 		/****freeing up memory*******/
 		for(int i=0; i<number_of_particles_array[0]; i++){
 			for(int j=0; j<number_of_particles_array[1]; j++){
+				for(int k=0; k<number_of_particles_array[2]; k++){
+					delete(particles[i][j][k]);
+				}
 				delete(particles[i][j]);
 			}
 			delete(particles[i]);
