@@ -1,4 +1,4 @@
-bool IsPrime(int number)
+bool IsPrime(long int number)
 {
 
     if (number == 2 || number == 3)
@@ -7,7 +7,7 @@ bool IsPrime(int number)
     if (number % 2 == 0 || number % 3 == 0)
         return false;
 
-    int divisor = 6;
+    long int divisor = 6;
     while (divisor * divisor - 2 * divisor + 1 <= number)
     {
 
@@ -25,7 +25,7 @@ bool IsPrime(int number)
 
 }
 
-int NextPrime(int a)
+long int NextPrime(long int a)
 {
 
     while (!IsPrime(++a)) 

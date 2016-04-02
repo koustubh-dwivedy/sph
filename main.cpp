@@ -71,6 +71,7 @@ int main(int argc, char **argv){
 	environ1.environmentWidth(10);
 	environ1.particlesDimen(part);//THIS  IS THE ARRAY CONTAINING THE DIMENSIONS OF particles ARRAY
 	environ1.addParticles(particles);//THIS IS THE ARRAY CONTAINING [0 OR 1](PARTICLE OR NOT) [X, Y, Z](INITIAL POSITIONS) AND [Vx, Vy, Vz](INITIAL VELOCITIES)
+	environ1.estimatedNumNearestNeighboursValue(80);//This value is the rough estimate of the max number of nearest neighbours we expect/wish to consider
 	environ1.envInit();
 	environ1.simulate();
 	environ1.environmentFree();

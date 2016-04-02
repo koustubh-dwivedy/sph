@@ -14,8 +14,8 @@ float viscosity_kernel(float position[3], float particle[6], float radius);
 void viscosity_kernel_gradient(float position[3], float particle[6], float radius, float* receiver);
 float viscosity_kernel_laplacian(float position[3], float particle[6], float radius);
 
-bool IsPrime(int number);
-int NextPrime(int a);
+bool IsPrime(long int number);
+long int NextPrime(long int a);
 
 
 
@@ -36,6 +36,7 @@ private:
 	float a;
 	float d;
 	float w;
+	int estimatedNumNearestNeighbours;
 	int number_of_particles;
 	int* number_of_particles_array;
 	// this is an array of 3 int's which specify number of [articles in each dimension.
@@ -49,7 +50,7 @@ private:
 		   |/_____x
 	*/
 	float mass;
-	int table_size;
+	long int table_size;
 	float**** particles;
 	// construct particles as ->
 	/*
@@ -74,6 +75,8 @@ public:
 		number_of_particles = 0;
 		mass = 0;
 		table_size = 0;
+		estimatedNumNearestNeighbours = 80;
+		//THE ABOVE VALUE OF 2000 HAS BEEN GIVEN RANDOMLY.
 	}
 	void setGravity(float gvt){
 		if(gvt >= 0){
@@ -161,6 +164,14 @@ public:
 	void addParticles(float**** part){
 		particles = part;
 	}
+	void estimatedNumNearestNeighboursValue(int n){
+		if(n > 0){
+			estimatedNumNearestNeighbours = n;
+		}
+		else{
+			std::cout << "Please enter a valid estimatedNumNearestNeighbours value. estimatedNumNearestNeighbours has to be >0.\n";
+		}
+	}
 	void envInit(void){
 		if(density > 0){
 			if(number_of_particles > 0){
@@ -182,6 +193,7 @@ public:
 		std::cout << "temperature " << temperature << "\n";
 		std::cout << "pressure " << atm_pressure << "\n";
 		std::cout << "hash table size " << table_size << "\n";
+		std::cout << "estimatedNumNearestNeighbours" << estimatedNumNearestNeighbours << "\n";
 		std::cout << "environmentLength " << a << "\n";
 		std::cout << "environmentHeight " << d << "\n";
 		std::cout << "environmentWidth " << w << "\n \n \n";
@@ -198,8 +210,7 @@ public:
 			std::cout << "THE PROGRAM WILL (SHOULD) NOW EXIT. PLEASE RECOMPILE WITH CORRECTED VALUES " << "\n";
 		}
 	}
-	void simulate();
-	void environmentFree(){		
+	void environmentFree(void){		
 		/****freeing up memory*******/
 		for(int i=0; i<number_of_particles_array[0]; i++){
 			for(int j=0; j<number_of_particles_array[1]; j++){
@@ -213,34 +224,30 @@ public:
 		delete(particles);
 		/****freeing up memory*******/
 	}
-};
+	void simulate(void){
+			if(ready == 1){
+
+			//// Initialize the smoothing kernels using (5.14) to compute the compact support radius
+			
+			// x has been hard-coded as 40 ~= 33 = (6)+(9*2+8)+(1) . IT CAN AND SHOULD BE TWEAKED
+			//////////////////////////////////////////////////////////////////////////////////////////
+			float compact_support_radius = pow(3*volume_of_fluid*40/(4*M_PI*number_of_particles),1/3);
+			//////////////////////////////////////////////////////////////////////////////////////////
 
 
+			hashTable table;
+			table.insertParticles(particles, table_size, number_of_particles_array, compact_support_radius);
+			int actualNearestNeighbours;//this varies from particle to particle
+
+			float* nearestNeighbourAdresses[estimatedNumNearestNeighbours];
+			//PASSING ON A CONSTANT SIZED ARRAY TO MAKE THINGS SIMPLE. (OTHERWISE DYNAMIC ALLOCATION WOULD NEED TO BE DONE)
+			//THIS SIZE IS TO BE CHANGED DEPENDING ON PROBLEM TO PROBLEM.
+
+			//change (1,1,1) below. It was only for the sake of compiling
+			table.particleQuery(1, 1, 1, nearestNeighbourAdresses, estimatedNumNearestNeighbours, &actualNearestNeighbours, compact_support_radius);
 
 
-
-
-
-void environment::simulate(){
-	if(ready == 1){
-
-		//// Initialize the smoothing kernels using (5.14) to compute the compact support radius
-		// x has been hard-coded as 13
-		
-
-
-
-		//float compact_support_radius = pow(3*b*c*w*13/(4*M_PI*number_of_particles),1/3.);
-
-
-
-
-
-
-
-
-
-
-
+			table.free();
+		}
 	}
-}
+};
