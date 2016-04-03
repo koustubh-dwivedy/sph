@@ -108,7 +108,10 @@ public:
 			}
 		}
 	}
-	void particleQuery(float x, float y, float z, float** nearestNeighbourList, int estimatedNumNearestNeighbours, int* numNearestNeighbours, float compactSupportRadius){
+	void particleQuery(float x, float y, float z, float** nearestNeighbourList, int estimatedNumNearestNeighbours, int* numNearestNeighbours, float compactSupportRadius, int ij){
+		//int ij is an will tell if we want the address of the particle itself to be returned in the nearestNeighbourList 
+		//if ij == 1, then include the query particle in the nearestNeighbourList
+		//if ij == 0, then send all nearest nearest neighbours except the query particle
 		int BB_min_x, BB_min_y, BB_min_z;
 		int BB_max_x, BB_max_y, BB_max_z;//BB stands for bounding box. see page number 43 in the paper
 		BB_min_x = (int)(x/((float)compactSupportRadius));
@@ -136,8 +139,10 @@ public:
 								location = tempNode->value;
 								tempDist = sqrt((x - location[1])*(x - location[1]) + (y - location[2])*(y - location[2]) + (z - location[3])*(z - location[3]));
 								if((tempDist <= compactSupportRadius) && (tempNumNearestNeighbours < estimatedNumNearestNeighbours)){
-									nearestNeighbourList[tempNumNearestNeighbours] = location;
-									tempNumNearestNeighbours += 1;
+									if(((tempDist == 0) && (ij == 1)) || (tempDist != 0)){
+										nearestNeighbourList[tempNumNearestNeighbours] = location;
+										tempNumNearestNeighbours += 1;
+									}
 								}
 								break;
 							}
@@ -145,8 +150,10 @@ public:
 								location = tempNode->value;
 								tempDist = sqrt((x - location[1])*(x - location[1]) + (y - location[2])*(y - location[2]) + (z - location[3])*(z - location[3]));
 								if((tempDist <= compactSupportRadius) && (tempNumNearestNeighbours < estimatedNumNearestNeighbours)){
-									nearestNeighbourList[tempNumNearestNeighbours] = location;
-									tempNumNearestNeighbours += 1;
+									if(((tempDist == 0) && (ij == 1)) || (tempDist != 0)){
+										nearestNeighbourList[tempNumNearestNeighbours] = location;
+										tempNumNearestNeighbours += 1;
+									}
 								}
 								tempNode = tempNode->nextNode;
 							}

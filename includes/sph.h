@@ -30,12 +30,14 @@ private:
 	//// Environment Parameters
 	float gravity;
 	float time_step;
+	float time_duration;
 	float temperature;
 	long int atm_pressure;
-	float density;
+	float density;//rest density of fluid
 	float a;
 	float d;
 	float w;
+	float compact_support_radius;
 	int estimatedNumNearestNeighbours;
 	int number_of_particles;
 	int* number_of_particles_array;
@@ -52,6 +54,15 @@ private:
 	float mass;
 	long int table_size;
 	float**** particles;
+	
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//particles_1 is the matrix which stores the content of (t-delta(t)) iteration
+	//particles_2 is the matrix in which the compute takes place and later get flushed to particles_1
+	float**** particles_1;//these are copies of particles with additional space for storing mass, density, force etc.
+	//these will take part in the actual compute
+	float**** particles_2;//these are copies of particles with additional space for storing mass, density, force etc.
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 	// construct particles as ->
 	/*
 		  z|   /y
@@ -61,6 +72,17 @@ private:
 	*/
 	float volume_of_fluid;
 	bool ready;
+
+
+
+
+	float buoyancyDiffusionCoeff;
+	float viscosityCoeff;
+	float surfaceTensionCoeff;
+	float thresholdCoeff;//What is threshold ???
+	float gasStiffnessCoeff;
+	float restitutionCoeff;
+
 
 public:
 	environment(){
@@ -92,6 +114,14 @@ public:
 		}
 		else{
 			std::cout << "Please enter a valid time_step value. time_step has to be >0.\n";
+		}
+	}
+	void setTimeDuration(float dur){
+		if(dur > 0){
+			time_duration = dur;
+		}
+		else{
+			std::cout << "Please enter a valid time_duration value. time_duration has to be >0.\n";
 		}
 	}
 	void setTemperature(float temp){
@@ -127,6 +157,7 @@ public:
 		}
 	}
 	void particlesDimen(int* a){
+
 		number_of_particles_array = a;
 	}
 	void fluidVolume(float vol){
@@ -162,6 +193,7 @@ public:
 		}
 	}
 	void addParticles(float**** part){
+
 		particles = part;
 	}
 	void estimatedNumNearestNeighboursValue(int n){
@@ -183,6 +215,59 @@ public:
 			}
 		}
 
+		////copying contents of "particles" in "particles_1" and "particles_2"
+		particles_1 = new float***[number_of_particles_array[0]];
+		particles_2 = new float***[number_of_particles_array[0]];
+		for(int i=0; i<number_of_particles_array[0]; i++){
+			particles_1[i] = new float**[number_of_particles_array[1]];
+			particles_2[i] = new float**[number_of_particles_array[1]];
+			for(int j=0; j<number_of_particles_array[1]; j++){
+				particles_1[i][j] = new float*[number_of_particles_array[2]];
+				particles_2[i][j] = new float*[number_of_particles_array[2]];
+				for(int k=0; k<number_of_particles_array[2]; k++){
+					particles_1[i][j][k] = new float[10];
+					particles_2[i][j][k] = new float[10];
+					//0 -> is particle or not
+					//1 -> x coord
+					//2 -> y coord
+					//3 -> z coord
+					//4 -> Vx value
+					//5 -> Vy value
+					//6 -> Vz value
+					//7 -> density
+					//8 -> pressure
+					//
+
+					particles_1[i][j][k][0] = particles[i][j][k][0];
+					particles_2[i][j][k][0] = particles[i][j][k][0];
+
+					particles_1[i][j][k][1] = particles[i][j][k][1];
+					particles_2[i][j][k][1] = particles[i][j][k][1];
+
+					particles_1[i][j][k][2] = particles[i][j][k][2];
+					particles_2[i][j][k][2] = particles[i][j][k][2];
+
+					particles_1[i][j][k][3] = particles[i][j][k][3];
+					particles_2[i][j][k][3] = particles[i][j][k][3];
+
+					particles_1[i][j][k][4] = particles[i][j][k][4];
+					particles_2[i][j][k][4] = particles[i][j][k][4];
+
+					particles_1[i][j][k][5] = particles[i][j][k][5];
+					particles_2[i][j][k][5] = particles[i][j][k][5];
+
+					particles_1[i][j][k][6] = particles[i][j][k][6];
+					particles_2[i][j][k][6] = particles[i][j][k][6];
+				}
+			}
+		}
+
+		// x has been hard-coded as 40 ~= 33 = (6)+(9*2+8)+(1) . IT CAN AND SHOULD BE TWEAKED
+		//reference values for x can be found in the paper
+		//////////////////////////////////////////////////////////////////////////////////////////
+		compact_support_radius = pow(3*volume_of_fluid*40/(4*M_PI*number_of_particles),1/3);
+		//////////////////////////////////////////////////////////////////////////////////////////
+
 		std::cout << "INPUT PARAMS AS OF NOW: \n \n";
 		std::cout << "density " << density << "\n";
 		std::cout << "numParticles " << number_of_particles << "\n";
@@ -192,8 +277,9 @@ public:
 		std::cout << "timeStep " << time_step << "\n";
 		std::cout << "temperature " << temperature << "\n";
 		std::cout << "pressure " << atm_pressure << "\n";
+		std::cout << "compact_support_radius " << compact_support_radius << "\n";
 		std::cout << "hash table size " << table_size << "\n";
-		std::cout << "estimatedNumNearestNeighbours" << estimatedNumNearestNeighbours << "\n";
+		std::cout << "estimatedNumNearestNeighbours " << estimatedNumNearestNeighbours << "\n";
 		std::cout << "environmentLength " << a << "\n";
 		std::cout << "environmentHeight " << d << "\n";
 		std::cout << "environmentWidth " << w << "\n \n \n";
@@ -216,36 +302,121 @@ public:
 			for(int j=0; j<number_of_particles_array[1]; j++){
 				for(int k=0; k<number_of_particles_array[2]; k++){
 					delete(particles[i][j][k]);
+					delete(particles_1[i][j][k]);
+					delete(particles_2[i][j][k]);
 				}
 				delete(particles[i][j]);
+				delete(particles_1[i][j]);
+				delete(particles_2[i][j]);
 			}
 			delete(particles[i]);
+			delete(particles_1[i]);
+			delete(particles_2[i]);
 		}
 		delete(particles);
+		delete(particles_1);
+		delete(particles_2);
 		/****freeing up memory*******/
 	}
+	//this function defined for internal use in "simulate" only
+	//it copies the contents of particles_2 to particles_1
+	void copy(void){
+		for(int i=0; i<number_of_particles_array[0]; i++){
+			for(int j=0; j<number_of_particles_array[1]; j++){
+				for(int k=0; k<number_of_particles_array[2]; k++){
+					particles_1[i][j][k][0] = particles_2[i][j][k][0];
+					particles_1[i][j][k][1] = particles_2[i][j][k][1];
+					particles_1[i][j][k][2] = particles_2[i][j][k][2];
+					particles_1[i][j][k][3] = particles_2[i][j][k][3];
+					particles_1[i][j][k][4] = particles_2[i][j][k][4];
+					particles_1[i][j][k][5] = particles_2[i][j][k][5];
+					particles_1[i][j][k][6] = particles_2[i][j][k][6];
+					particles_1[i][j][k][7] = particles_2[i][j][k][7];
+					particles_1[i][j][k][8] = particles_2[i][j][k][8];
+					particles_1[i][j][k][9] = particles_2[i][j][k][9];
+				}
+			}
+		}
+	}
+
 	void simulate(void){
-			if(ready == 1){
-
-			//// Initialize the smoothing kernels using (5.14) to compute the compact support radius
-			
-			// x has been hard-coded as 40 ~= 33 = (6)+(9*2+8)+(1) . IT CAN AND SHOULD BE TWEAKED
-			//////////////////////////////////////////////////////////////////////////////////////////
-			float compact_support_radius = pow(3*volume_of_fluid*40/(4*M_PI*number_of_particles),1/3);
-			//////////////////////////////////////////////////////////////////////////////////////////
-
+		if(ready == 1){
 
 			hashTable table;
-			table.insertParticles(particles, table_size, number_of_particles_array, compact_support_radius);
+			table.insertParticles(particles_1, table_size, number_of_particles_array, compact_support_radius);
 			int actualNearestNeighbours;//this varies from particle to particle
-
 			float* nearestNeighbourAdresses[estimatedNumNearestNeighbours];
 			//PASSING ON A CONSTANT SIZED ARRAY TO MAKE THINGS SIMPLE. (OTHERWISE DYNAMIC ALLOCATION WOULD NEED TO BE DONE)
-			//THIS SIZE IS TO BE CHANGED DEPENDING ON PROBLEM TO PROBLEM.
+			//THIS SIZE IS TO BE CHANGED DEPENDING ON PROBLEM TO PROBLEM. (or maybe not?)
 
-			//change (1,1,1) below. It was only for the sake of compiling
-			table.particleQuery(1, 1, 1, nearestNeighbourAdresses, estimatedNumNearestNeighbours, &actualNearestNeighbours, compact_support_radius);
+			float temp_density;
+			float temp_pressure;
+			float temp_force_x, temp_force_y, temp_force_z;
+			float receiver[3];
 
+			
+			//1. compute density and pressure
+			//2. compute internal forces. internal <- pressure+viscosity
+			//3. compute external forces
+			//4. time integration and collision handling
+
+			for(float t=0; t<time_duration; t = t + time_step){
+				//1.
+				for(int i=0; i<number_of_particles_array[0]; i++){
+					for(int j=0; j<number_of_particles_array[1]; j++){
+						for(int k=0; k<number_of_particles_array[2]; k++){
+							table.particleQuery(particles_1[i][j][k][1], particles_1[i][j][k][2], particles_1[i][j][k][3], nearestNeighbourAdresses, estimatedNumNearestNeighbours, &actualNearestNeighbours, compact_support_radius, 1);
+							temp_density = 0;
+							temp_pressure = 0;
+							for(int l=0; l<actualNearestNeighbours; l++){
+								temp_density = temp_density + mass*default_kernel(nearestNeighbourAdresses[l], particles_1[i][j][k], compact_support_radius);
+							}
+							temp_pressure = gasStiffnessCoeff*(temp_density - density);
+							particles_1[i][j][k][7] = temp_density;
+							particles_1[i][j][k][8] = temp_pressure;
+						}
+					}
+				}
+				//2.
+				for(int i=0; i<number_of_particles_array[0]; i++){
+					for(int j=0; j<number_of_particles_array[1]; j++){
+						for(int k=0; k<number_of_particles_array[2]; k++){
+							table.particleQuery(particles_1[i][j][k][1], particles_1[i][j][k][2], particles_1[i][j][k][3], nearestNeighbourAdresses, estimatedNumNearestNeighbours, &actualNearestNeighbours, compact_support_radius, 0);
+							temp_force_x = 0;
+							temp_force_y = 0;
+							temp_force_z = 0;
+							for(int l=0; l<actualNearestNeighbours; l++){
+								//the following is pressure force
+								pressure_kernel_gradient(nearestNeighbourAdresses[l], particles_1[i][j][k], compact_support_radius, receiver);
+								float temp_var = 0;
+								temp_var = mass*((nearestNeighbourAdresses[l][8]/((float)((nearestNeighbourAdresses[l][7])*(nearestNeighbourAdresses[l][7])))) + (particles_1[i][j][k][8]/((float)(particles_1[i][j][k][7])*(particles_1[i][j][k][7]))));
+								temp_force_x = (temp_force_x + receiver[0]*temp_var)*(-particles_1[i][j][k][7]);
+								temp_force_y = (temp_force_y + receiver[1]*temp_var)*(-particles_1[i][j][k][7]);
+								temp_force_z = (temp_force_z + receiver[2]*temp_var)*(-particles_1[i][j][k][7]);
+								//
+								//the following is viscous force
+								temp_var = viscosityCoeff*(mass/((float)nearestNeighbourAdresses[l][7]))*viscosity_kernel_laplacian(nearestNeighbourAdresses[l], particles_1[i][j][k], compact_support_radius);
+								temp_force_x = temp_force_x + temp_var*(nearestNeighbourAdresses[l][4] - particles_1[i][j][k][4]);
+								temp_force_y = temp_force_y + temp_var*(nearestNeighbourAdresses[l][5] - particles_1[i][j][k][5]);
+								temp_force_z = temp_force_z + temp_var*(nearestNeighbourAdresses[l][6] - particles_1[i][j][k][6]);
+								//
+							}
+						}
+					}
+				}
+
+
+
+
+
+
+
+
+
+
+
+				//export data and hash table reinitialize
+			}
 
 			table.free();
 		}

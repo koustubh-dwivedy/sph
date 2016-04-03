@@ -60,7 +60,8 @@ int main(int argc, char **argv){
 
 	environment environ1;
 	environ1.setGravity(9.81);
-	environ1.setTimeStep(0.01);
+	environ1.setTimeStep(1);//initially this was 0.01
+	environ1.setTimeDuration(10);
 	environ1.setTemperature(283.15);
 	environ1.setAtmosphericPressure(101325);
 	environ1.setDensity(1000);
