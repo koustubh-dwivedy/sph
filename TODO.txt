@@ -1,4 +1,5 @@
 2. Implementation of ij argument in particleQuery function might pose problems. Keep it in mind.
 3. Create methods in sph.h for entering various coefficients introduced. Think of how to calculate them from values already known (figure out formulas for calculating those coeff's)
+<<<<<<< HEAD
 6. Create a method to write out vtk files
 8. Is your coordinate system compatible with paper's for forces? (lines 434 onwards in sph.h)
