@@ -4,15 +4,15 @@
 #include <iostream>
 #include <CL/cl.h>
 
-float default_kernel(float position[3], float particle[6], float radius);
-void default_kernel_gradient(float position[3], float particle[6], float radius, float* receiver);
-float default_kernel_laplacian(float position[3], float particle[6], float radius);
-float pressure_kernel(float position[3], float particle[6], float radius);
-void pressure_kernel_gradient(float position[3], float particle[6], float radius, float* receiver);
-float pressure_kernel_laplacian(float position[3], float particle[6], float radius);
-float viscosity_kernel(float position[3], float particle[6], float radius);
-void viscosity_kernel_gradient(float position[3], float particle[6], float radius, float* receiver);
-float viscosity_kernel_laplacian(float position[3], float particle[6], float radius);
+float default_kernel(float position[12], float particle[12], float radius);
+void default_kernel_gradient(float position[12], float particle[12], float radius, float* receiver);
+float default_kernel_laplacian(float position[12], float particle[12], float radius);
+float pressure_kernel(float position[12], float particle[12], float radius);
+void pressure_kernel_gradient(float position[12], float particle[12], float radius, float* receiver);
+float pressure_kernel_laplacian(float position[12], float particle[12], float radius);
+float viscosity_kernel(float position[12], float particle[12], float radius);
+void viscosity_kernel_gradient(float position[12], float particle[12], float radius, float* receiver);
+float viscosity_kernel_laplacian(float position[12], float particle[12], float radius);
 
 bool IsPrime(long int number);
 long int NextPrime(long int a);
@@ -56,14 +56,11 @@ private:
 	float**** particles;
 	
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	//particles_1 is the matrix which stores the content of (t-delta(t)) iteration
-	//particles_2 is the matrix in which the compute takes place and later get flushed to particles_1
-	float**** particles_1;//these are copies of particles with additional space for storing mass, density, force etc.
-	//these will take part in the actual compute
-	float**** particles_2;//these are copies of particles with additional space for storing mass, density, force etc.
+	//particles_1 is the matrix which stores the content of (time t) iteration. (it's a local copy)
+	float**** particles_1;//this is the copy of particles with additional space for storing mass, density, force etc.
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	// construct particles as ->
+	// construct particles as ->**this coordinate system is not valid for applying forces
 	/*
 		  z|   /y
 		   |  /
@@ -71,6 +68,8 @@ private:
 		   |/_____x
 	*/
 	float volume_of_fluid;
+	bool is_liquid;//if isLiquid is 1 then buoyancy simulation is not performed
+	//if isLiquid is 0 then it is assumed that fluid is gas
 	bool ready;
 
 
@@ -79,7 +78,7 @@ private:
 	float buoyancyDiffusionCoeff;
 	float viscosityCoeff;
 	float surfaceTensionCoeff;
-	float thresholdCoeff;//What is threshold ???
+	float surfaceTensionThresholdCoeff;
 	float gasStiffnessCoeff;
 	float restitutionCoeff;
 
@@ -99,6 +98,7 @@ public:
 		table_size = 0;
 		estimatedNumNearestNeighbours = 80;
 		//THE ABOVE VALUE OF 2000 HAS BEEN GIVEN RANDOMLY.
+		surfaceTensionThresholdCoeff = 7.065;//currently hardcoded it for water;
 	}
 	void setGravity(float gvt){
 		if(gvt >= 0){
@@ -215,49 +215,40 @@ public:
 			}
 		}
 
-		////copying contents of "particles" in "particles_1" and "particles_2"
+		////copying contents of "particles" in "particles_1"
 		particles_1 = new float***[number_of_particles_array[0]];
-		particles_2 = new float***[number_of_particles_array[0]];
 		for(int i=0; i<number_of_particles_array[0]; i++){
 			particles_1[i] = new float**[number_of_particles_array[1]];
-			particles_2[i] = new float**[number_of_particles_array[1]];
 			for(int j=0; j<number_of_particles_array[1]; j++){
 				particles_1[i][j] = new float*[number_of_particles_array[2]];
-				particles_2[i][j] = new float*[number_of_particles_array[2]];
 				for(int k=0; k<number_of_particles_array[2]; k++){
-					particles_1[i][j][k] = new float[10];
-					particles_2[i][j][k] = new float[10];
+					particles_1[i][j][k] = new float[12];
 					//0 -> is particle or not
 					//1 -> x coord
 					//2 -> y coord
 					//3 -> z coord
-					//4 -> Vx value
-					//5 -> Vy value
-					//6 -> Vz value
+					//4 -> Vx value THIS IS NOT STORING VELOCITY VALUE AT TIME t BUT AT t (+-) 0.5*delta(t)
+					//5 -> Vy value THIS IS NOT STORING VELOCITY VALUE AT TIME t BUT AT t (+-) 0.5*delta(t)
+					//6 -> Vz value THIS IS NOT STORING VELOCITY VALUE AT TIME t BUT AT t (+-) 0.5*delta(t)
 					//7 -> density
 					//8 -> pressure
-					//
+					//9 -> force_x
+					//10-> force_y
+					//11-> force_z
 
 					particles_1[i][j][k][0] = particles[i][j][k][0];
-					particles_2[i][j][k][0] = particles[i][j][k][0];
 
 					particles_1[i][j][k][1] = particles[i][j][k][1];
-					particles_2[i][j][k][1] = particles[i][j][k][1];
 
 					particles_1[i][j][k][2] = particles[i][j][k][2];
-					particles_2[i][j][k][2] = particles[i][j][k][2];
 
 					particles_1[i][j][k][3] = particles[i][j][k][3];
-					particles_2[i][j][k][3] = particles[i][j][k][3];
 
 					particles_1[i][j][k][4] = particles[i][j][k][4];
-					particles_2[i][j][k][4] = particles[i][j][k][4];
 
 					particles_1[i][j][k][5] = particles[i][j][k][5];
-					particles_2[i][j][k][5] = particles[i][j][k][5];
 
 					particles_1[i][j][k][6] = particles[i][j][k][6];
-					particles_2[i][j][k][6] = particles[i][j][k][6];
 				}
 			}
 		}
@@ -270,6 +261,7 @@ public:
 
 		std::cout << "INPUT PARAMS AS OF NOW: \n \n";
 		std::cout << "density " << density << "\n";
+		std::cout << "isLiquid " << is_liquid << "\n";
 		std::cout << "numParticles " << number_of_particles << "\n";
 		std::cout << "fluidVolume " << volume_of_fluid << "\n";
 		std::cout << "mass of 1 particle " << mass << "\n";
@@ -296,129 +288,228 @@ public:
 			std::cout << "THE PROGRAM WILL (SHOULD) NOW EXIT. PLEASE RECOMPILE WITH CORRECTED VALUES " << "\n";
 		}
 	}
-	void environmentFree(void){		
+	void isLiquid(bool a){
+
+		is_liquid = a;		
+	}
+	void environmentFree(void){
 		/****freeing up memory*******/
 		for(int i=0; i<number_of_particles_array[0]; i++){
 			for(int j=0; j<number_of_particles_array[1]; j++){
 				for(int k=0; k<number_of_particles_array[2]; k++){
 					delete(particles[i][j][k]);
 					delete(particles_1[i][j][k]);
-					delete(particles_2[i][j][k]);
 				}
 				delete(particles[i][j]);
 				delete(particles_1[i][j]);
-				delete(particles_2[i][j]);
 			}
 			delete(particles[i]);
 			delete(particles_1[i]);
-			delete(particles_2[i]);
 		}
 		delete(particles);
 		delete(particles_1);
-		delete(particles_2);
 		/****freeing up memory*******/
 	}
-	//this function defined for internal use in "simulate" only
-	//it copies the contents of particles_2 to particles_1
-	void copy(void){
-		for(int i=0; i<number_of_particles_array[0]; i++){
-			for(int j=0; j<number_of_particles_array[1]; j++){
-				for(int k=0; k<number_of_particles_array[2]; k++){
-					particles_1[i][j][k][0] = particles_2[i][j][k][0];
-					particles_1[i][j][k][1] = particles_2[i][j][k][1];
-					particles_1[i][j][k][2] = particles_2[i][j][k][2];
-					particles_1[i][j][k][3] = particles_2[i][j][k][3];
-					particles_1[i][j][k][4] = particles_2[i][j][k][4];
-					particles_1[i][j][k][5] = particles_2[i][j][k][5];
-					particles_1[i][j][k][6] = particles_2[i][j][k][6];
-					particles_1[i][j][k][7] = particles_2[i][j][k][7];
-					particles_1[i][j][k][8] = particles_2[i][j][k][8];
-					particles_1[i][j][k][9] = particles_2[i][j][k][9];
-				}
-			}
-		}
-	}
-
 	void simulate(void){
 		if(ready == 1){
 
-			hashTable table;
-			table.insertParticles(particles_1, table_size, number_of_particles_array, compact_support_radius);
-			int actualNearestNeighbours;//this varies from particle to particle
-			float* nearestNeighbourAdresses[estimatedNumNearestNeighbours];
-			//PASSING ON A CONSTANT SIZED ARRAY TO MAKE THINGS SIMPLE. (OTHERWISE DYNAMIC ALLOCATION WOULD NEED TO BE DONE)
-			//THIS SIZE IS TO BE CHANGED DEPENDING ON PROBLEM TO PROBLEM. (or maybe not?)
-
-			float temp_density;
-			float temp_pressure;
-			float temp_force_x, temp_force_y, temp_force_z;
-			float receiver[3];
-
-			
 			//1. compute density and pressure
 			//2. compute internal forces. internal <- pressure+viscosity
 			//3. compute external forces
 			//4. time integration and collision handling
+			//5. export data and hash table reinitialize
 
+
+			//a thing to note-> the if condition which checks if the material is liquid or gas can be taken outside the ~30000*100 loops
+			//this can result in significant speedup
 			for(float t=0; t<time_duration; t = t + time_step){
+
+				hashTable table;
+				table.insertParticles(particles_1, table_size, number_of_particles_array, compact_support_radius);
+
+
 				//1.
 				for(int i=0; i<number_of_particles_array[0]; i++){
 					for(int j=0; j<number_of_particles_array[1]; j++){
 						for(int k=0; k<number_of_particles_array[2]; k++){
-							table.particleQuery(particles_1[i][j][k][1], particles_1[i][j][k][2], particles_1[i][j][k][3], nearestNeighbourAdresses, estimatedNumNearestNeighbours, &actualNearestNeighbours, compact_support_radius, 1);
-							temp_density = 0;
-							temp_pressure = 0;
-							for(int l=0; l<actualNearestNeighbours; l++){
-								temp_density = temp_density + mass*default_kernel(nearestNeighbourAdresses[l], particles_1[i][j][k], compact_support_radius);
+							if(particles_1[i][j][k][0] == 1){
+								int actualNearestNeighbours;//this varies from particle to particle
+								float* nearestNeighbourAdresses[estimatedNumNearestNeighbours];
+								//PASSING ON A CONSTANT SIZED ARRAY TO MAKE THINGS SIMPLE. (OTHERWISE DYNAMIC ALLOCATION WOULD NEED TO BE DONE)
+								//THIS SIZE IS TO BE CHANGED DEPENDING ON PROBLEM TO PROBLEM. (or maybe not?)
+
+								float temp_density;
+								float temp_pressure;
+
+								table.particleQuery(particles_1[i][j][k][1], particles_1[i][j][k][2], particles_1[i][j][k][3], nearestNeighbourAdresses, estimatedNumNearestNeighbours, &actualNearestNeighbours, compact_support_radius, 1);
+								temp_density = 0;
+								temp_pressure = 0;
+								for(int l=0; l<actualNearestNeighbours; l++){
+									temp_density = temp_density + mass*default_kernel(nearestNeighbourAdresses[l], particles_1[i][j][k], compact_support_radius);
+								}
+								temp_pressure = gasStiffnessCoeff*(temp_density - density);
+								particles_1[i][j][k][7] = temp_density;
+								particles_1[i][j][k][8] = temp_pressure;
 							}
-							temp_pressure = gasStiffnessCoeff*(temp_density - density);
-							particles_1[i][j][k][7] = temp_density;
-							particles_1[i][j][k][8] = temp_pressure;
 						}
 					}
 				}
-				//2.
+				//2. and 3.
 				for(int i=0; i<number_of_particles_array[0]; i++){
 					for(int j=0; j<number_of_particles_array[1]; j++){
 						for(int k=0; k<number_of_particles_array[2]; k++){
-							table.particleQuery(particles_1[i][j][k][1], particles_1[i][j][k][2], particles_1[i][j][k][3], nearestNeighbourAdresses, estimatedNumNearestNeighbours, &actualNearestNeighbours, compact_support_radius, 0);
-							temp_force_x = 0;
-							temp_force_y = 0;
-							temp_force_z = 0;
-							for(int l=0; l<actualNearestNeighbours; l++){
-								//the following is pressure force
-								pressure_kernel_gradient(nearestNeighbourAdresses[l], particles_1[i][j][k], compact_support_radius, receiver);
-								float temp_var = 0;
-								temp_var = mass*((nearestNeighbourAdresses[l][8]/((float)((nearestNeighbourAdresses[l][7])*(nearestNeighbourAdresses[l][7])))) + (particles_1[i][j][k][8]/((float)(particles_1[i][j][k][7])*(particles_1[i][j][k][7]))));
-								temp_force_x = (temp_force_x + receiver[0]*temp_var)*(-particles_1[i][j][k][7]);
-								temp_force_y = (temp_force_y + receiver[1]*temp_var)*(-particles_1[i][j][k][7]);
-								temp_force_z = (temp_force_z + receiver[2]*temp_var)*(-particles_1[i][j][k][7]);
-								//
-								//the following is viscous force
-								temp_var = viscosityCoeff*(mass/((float)nearestNeighbourAdresses[l][7]))*viscosity_kernel_laplacian(nearestNeighbourAdresses[l], particles_1[i][j][k], compact_support_radius);
-								temp_force_x = temp_force_x + temp_var*(nearestNeighbourAdresses[l][4] - particles_1[i][j][k][4]);
-								temp_force_y = temp_force_y + temp_var*(nearestNeighbourAdresses[l][5] - particles_1[i][j][k][5]);
-								temp_force_z = temp_force_z + temp_var*(nearestNeighbourAdresses[l][6] - particles_1[i][j][k][6]);
-								//
+							if(particles_1[i][j][k][0] == 1){
+								int actualNearestNeighbours;//this varies from particle to particle
+								float* nearestNeighbourAdresses[estimatedNumNearestNeighbours];
+								//PASSING ON A CONSTANT SIZED ARRAY TO MAKE THINGS SIMPLE. (OTHERWISE DYNAMIC ALLOCATION WOULD NEED TO BE DONE)
+								//THIS SIZE IS TO BE CHANGED DEPENDING ON PROBLEM TO PROBLEM. (or maybe not?)
+
+								table.particleQuery(particles_1[i][j][k][1], particles_1[i][j][k][2], particles_1[i][j][k][3], nearestNeighbourAdresses, estimatedNumNearestNeighbours, &actualNearestNeighbours, compact_support_radius, 0);
+
+								float temp_force_x=0, temp_force_y=0, temp_force_z=0;
+								float surf_norm_x=0, surf_norm_y=0, surf_norm_z=0;
+
+								for(int l=0; l<actualNearestNeighbours; l++){
+									//the following is pressure force
+									float receiver[3];
+									pressure_kernel_gradient(nearestNeighbourAdresses[l], particles_1[i][j][k], compact_support_radius, receiver);
+									float temp_var = 0;
+									temp_var = mass*((nearestNeighbourAdresses[l][8]/((float)((nearestNeighbourAdresses[l][7])*(nearestNeighbourAdresses[l][7])))) + (particles_1[i][j][k][8]/((float)(particles_1[i][j][k][7])*(particles_1[i][j][k][7]))));
+									temp_force_x = (temp_force_x + receiver[0]*temp_var)*(-particles_1[i][j][k][7]);
+									temp_force_y = (temp_force_y + receiver[1]*temp_var)*(-particles_1[i][j][k][7]);
+									temp_force_z = (temp_force_z + receiver[2]*temp_var)*(-particles_1[i][j][k][7]);
+									//
+									//the following is viscous force
+									temp_var = viscosityCoeff*(mass/((float)nearestNeighbourAdresses[l][7]))*viscosity_kernel_laplacian(nearestNeighbourAdresses[l], particles_1[i][j][k], compact_support_radius);
+									temp_force_x = temp_force_x + temp_var*(nearestNeighbourAdresses[l][4] - particles_1[i][j][k][4]);
+									temp_force_y = temp_force_y + temp_var*(nearestNeighbourAdresses[l][5] - particles_1[i][j][k][5]);
+									temp_force_z = temp_force_z + temp_var*(nearestNeighbourAdresses[l][6] - particles_1[i][j][k][6]);
+									//
+									if(is_liquid){//finding normal to fluid for finding force due to surface tension
+										//the following is surface normal
+										default_kernel_gradient(nearestNeighbourAdresses[l], particles_1[i][j][k], compact_support_radius, receiver);
+										surf_norm_x = surf_norm_x + receiver[0]*mass/((float)nearestNeighbourAdresses[l][8]);
+										surf_norm_y = surf_norm_y + receiver[1]*mass/((float)nearestNeighbourAdresses[l][8]);
+										surf_norm_z = surf_norm_z + receiver[2]*mass/((float)nearestNeighbourAdresses[l][8]);
+										//
+									}
+								}
+								//finding surface tension force from surface normal if the material is liquid
+								if(is_liquid){
+									//the following is gravity
+									temp_force_z = temp_force_z + particles_1[i][j][k][7]*gravity;
+									//
+									float surf_norm_magn = sqrt(surf_norm_x*surf_norm_x + surf_norm_y*surf_norm_y + surf_norm_z+surf_norm_z);
+									for(int l=0; l<actualNearestNeighbours; l++){
+										float temp_var = (mass/(nearestNeighbourAdresses[l][7]))*default_kernel_laplacian(nearestNeighbourAdresses[l], particles_1[i][j][k], compact_support_radius);
+										temp_force_x = temp_force_x + (-surfaceTensionCoeff)*(surf_norm_x/((float)surf_norm_magn))*temp_var;
+										temp_force_y = temp_force_y + (-surfaceTensionCoeff)*(surf_norm_y/((float)surf_norm_magn))*temp_var;
+										temp_force_z = temp_force_z + (-surfaceTensionCoeff)*(surf_norm_z/((float)surf_norm_magn))*temp_var;
+									}
+								}
+								else if(!is_liquid){//forces specific to gases
+									//for buoyancy
+									temp_force_z = temp_force_z + buoyancyDiffusionCoeff*gravity*(particles_1[i][j][k][7] - density);
+									//
+								}
+
+								particles_1[i][j][k][9] = temp_force_x;
+								particles_1[i][j][k][10] = temp_force_y;
+								particles_1[i][j][k][11] = temp_force_z;
 							}
 						}
 					}
 				}
 
+				//4.
+				//the following if condition is to take care of initial velocity offset
+				if(t == 0){
+					for(int i=0; i<number_of_particles_array[0]; i++){
+						for(int j=0; j<number_of_particles_array[1]; j++){
+							for(int k=0; k<number_of_particles_array[2]; k++){
+								if(particles_1[i][j][k][0] == 1){
+
+									float temp_accn_x, temp_accn_y, temp_accn_z;
+
+									temp_accn_x = particles_1[i][j][k][9]/((float)particles_1[i][j][k][7]);
+									temp_accn_y = particles_1[i][j][k][10]/((float)particles_1[i][j][k][7]);
+									temp_accn_z = particles_1[i][j][k][11]/((float)particles_1[i][j][k][7]);
+
+									particles_1[i][j][k][4] = particles_1[i][j][k][4] - 0.5*time_step*temp_accn_x;
+									particles_1[i][j][k][5] = particles_1[i][j][k][5] - 0.5*time_step*temp_accn_x;
+									particles_1[i][j][k][6] = particles_1[i][j][k][6] - 0.5*time_step*temp_accn_x;
+								}
+							}
+						}
+					}
+				}
+				else{
+					for(int i=0; i<number_of_particles_array[0]; i++){
+						for(int j=0; j<number_of_particles_array[1]; j++){
+							for(int k=0; k<number_of_particles_array[2]; k++){
+								if(particles_1[i][j][k][0] == 1){
+
+									float temp_accn_x, temp_accn_y, temp_accn_z;
+
+									temp_accn_x = particles_1[i][j][k][9]/((float)particles_1[i][j][k][7]);
+									temp_accn_y = particles_1[i][j][k][10]/((float)particles_1[i][j][k][7]);
+									temp_accn_z = particles_1[i][j][k][11]/((float)particles_1[i][j][k][7]);
+
+									particles_1[i][j][k][4] = particles_1[i][j][k][4] + time_step*temp_accn_x;
+									particles_1[i][j][k][5] = particles_1[i][j][k][5] + time_step*temp_accn_x;
+									particles_1[i][j][k][6] = particles_1[i][j][k][6] + time_step*temp_accn_x;
+
+									particles_1[i][j][k][1] = particles_1[i][j][k][1] + time_step*particles_1[i][j][k][4];
+									particles_1[i][j][k][2] = particles_1[i][j][k][2] + time_step*particles_1[i][j][k][5];
+									particles_1[i][j][k][3] = particles_1[i][j][k][3] + time_step*particles_1[i][j][k][6];
 
 
-
-
-
-
-
-
-
-
-				//export data and hash table reinitialize
+									//detecting collision
+									if(particles_1[i][j][k][1] < 0){
+										float depth = -particles_1[i][j][k][1];
+										particles_1[i][j][k][1] = 0;
+										float vel_magn = sqrt(particles_1[i][j][k][4]*particles_1[i][j][k][4] + particles_1[i][j][k][5]*particles_1[i][j][k][5] + particles_1[i][j][k][6]*particles_1[i][j][k][6]);
+										particles_1[i][j][k][4] = -(restitutionCoeff*depth*particles_1[i][j][k][4])/((float)time_step*vel_magn);
+									}
+									else if(particles_1[i][j][k][1] > a){
+										float depth = particles_1[i][j][k][1] - a;
+										particles_1[i][j][k][1] = a;
+										float vel_magn = sqrt(particles_1[i][j][k][4]*particles_1[i][j][k][4] + particles_1[i][j][k][5]*particles_1[i][j][k][5] + particles_1[i][j][k][6]*particles_1[i][j][k][6]);
+										particles_1[i][j][k][4] = -(restitutionCoeff*depth*particles_1[i][j][k][4])/((float)time_step*vel_magn);
+									}
+									if(particles_1[i][j][k][2] < 0){
+										float depth = -particles_1[i][j][k][2];
+										particles_1[i][j][k][2] = 0;
+										float vel_magn = sqrt(particles_1[i][j][k][4]*particles_1[i][j][k][4] + particles_1[i][j][k][5]*particles_1[i][j][k][5] + particles_1[i][j][k][6]*particles_1[i][j][k][6]);
+										particles_1[i][j][k][5] = -(restitutionCoeff*depth*particles_1[i][j][k][5])/((float)time_step*vel_magn);
+									}
+									else if(particles_1[i][j][k][2] > w){
+										float depth = particles_1[i][j][k][2] - w;
+										particles_1[i][j][k][2] = w;
+										float vel_magn = sqrt(particles_1[i][j][k][4]*particles_1[i][j][k][4] + particles_1[i][j][k][5]*particles_1[i][j][k][5] + particles_1[i][j][k][6]*particles_1[i][j][k][6]);
+										particles_1[i][j][k][5] = -(restitutionCoeff*depth*particles_1[i][j][k][5])/((float)time_step*vel_magn);
+									}
+									if(particles_1[i][j][k][3] < 0){
+										float depth = -particles_1[i][j][k][3];
+										particles_1[i][j][k][3] = 0;
+										float vel_magn = sqrt(particles_1[i][j][k][4]*particles_1[i][j][k][4] + particles_1[i][j][k][5]*particles_1[i][j][k][5] + particles_1[i][j][k][6]*particles_1[i][j][k][6]);
+										particles_1[i][j][k][6] = -(restitutionCoeff*depth*particles_1[i][j][k][6])/((float)time_step*vel_magn);
+									}
+									else if(particles_1[i][j][k][3] > d){
+										float depth = particles_1[i][j][k][3] - d;
+										particles_1[i][j][k][3] = d;
+										float vel_magn = sqrt(particles_1[i][j][k][4]*particles_1[i][j][k][4] + particles_1[i][j][k][5]*particles_1[i][j][k][5] + particles_1[i][j][k][6]*particles_1[i][j][k][6]);
+										particles_1[i][j][k][6] = -(restitutionCoeff*depth*particles_1[i][j][k][6])/((float)time_step*vel_magn);
+									}
+								}
+							}
+						}
+					}
+				}
+				//5.
+				table.free();
+				//method for exporting data
 			}
-
-			table.free();
 		}
 	}
 };

@@ -1,6 +1,4 @@
-1. Update kernels.cpp by changing the arguments of the kernel functions from particle[6], position[3] to particle[10], position[10]
 2. Implementation of ij argument in particleQuery function might pose problems. Keep it in mind.
 3. Create methods in sph.h for entering various coefficients introduced. Think of how to calculate them from values already known (figure out formulas for calculating those coeff's)
-4. Do you need to have particles_1 and particles_2. I think all can be done using particles_1. if yes, remove copy method
-5. Size of float[10] in particles_1 can be reduced. Need velocity? (i think we need it for paraview display)
 6. Create a method to write out vtk files
+8. Is your coordinate system compatible with paper's for forces? (lines 434 onwards in sph.h)
