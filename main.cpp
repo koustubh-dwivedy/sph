@@ -27,7 +27,7 @@
 #include "includes/sph.h"
 
 int main(int argc, char **argv){
-	int part[3] = {20, 50, 30};//THIS IS NOT NUMBER OF PARTICLES, BUT THE DIMENSION OF particles ARRAY. (WHICH TURNS OUT TO BE EQUAL TO NUMBER OF PARTICLES)
+	int part[3] = {4, 10, 6};//THIS IS NOT NUMBER OF PARTICLES, BUT THE DIMENSION OF particles ARRAY. (WHICH TURNS OUT TO BE EQUAL TO NUMBER OF PARTICLES)
 	float**** particles;
 	//Define your particles here
 	/********
@@ -66,8 +66,14 @@ int main(int argc, char **argv){
 	environ1.setTemperature(283.15);
 	environ1.setAtmosphericPressure(101325);
 	environ1.setDensity(1000);
-	environ1.numParticles(20*50*30);//AT PRESENT, IT IS LIMITED BY MAXIMUM VALUE OF int
+	environ1.numParticles(4*10*6);//AT PRESENT, IT IS LIMITED BY MAXIMUM VALUE OF int
 	environ1.fluidVolume(4*10*6);//THIS IS THE ACTUAL OCCUPIED VOLUME OF FLUID (x*y*z)
+	environ1.setBuoyancyDiffusionCoeff(0);
+	environ1.setViscosityCoeff(3.5);
+	environ1.setSurfaceTensionCoeff(0.0728);
+	environ1.setSurfaceTensionThresholdCoeff(7.065);
+	environ1.setGasStiffnessCoeff(3);
+	environ1.setRestitutionCoeff(0);
 	environ1.environmentLength(10);
 	environ1.environmentHeight(10);
 	environ1.environmentWidth(10);

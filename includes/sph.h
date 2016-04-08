@@ -2,7 +2,7 @@
 #include "kernels.cpp"
 #include "prime.cpp"
 #include <iostream>
-#include <CL/cl.h>
+//#include <CL/cl.h>
 
 float default_kernel(float position[12], float particle[12], float radius);
 void default_kernel_gradient(float position[12], float particle[12], float radius, float* receiver);
@@ -147,7 +147,25 @@ public:
 		else{
 			std::cout << "Please enter a valid density value. density has to be >=0.\n";
 		}
-	}		
+	}
+	void setBuoyancyDiffusionCoeff(float value){
+		buoyancyDiffusionCoeff = value;
+	}
+	void setViscosityCoeff(float value){
+		viscosityCoeff = value;
+	}
+	void setSurfaceTensionCoeff(float value){
+		surfaceTensionCoeff = value;
+	}
+	void setSurfaceTensionThresholdCoeff(float value){
+		surfaceTensionThresholdCoeff = value;
+	}
+	void setGasStiffnessCoeff(float value){
+		gasStiffnessCoeff = value;
+	}
+	void setRestitutionCoeff(float value){
+		restitutionCoeff = value;
+	}
 	void numParticles(int num){
 		if(num > 0){
 			number_of_particles = num;
@@ -272,6 +290,12 @@ public:
 		std::cout << "compact_support_radius " << compact_support_radius << "\n";
 		std::cout << "hash table size " << table_size << "\n";
 		std::cout << "estimatedNumNearestNeighbours " << estimatedNumNearestNeighbours << "\n";
+		std::cout << "BuoyancyDiffusionCoeff " << buoyancyDiffusionCoeff << "\n";
+		std::cout << "ViscosityCoeff " << 	viscosityCoeff << "\n";
+		std::cout << "SurfaceTensionCoeff " << 	surfaceTensionCoeff << "\n";
+		std::cout << "SurfaceTensionThresholdCoeff " << 	surfaceTensionThresholdCoeff << "\n";
+		std::cout << "GasStiffnessCoeff " << 	gasStiffnessCoeff << "\n";
+		std::cout << "RestitutionCoeff " << 	restitutionCoeff << "\n";
 		std::cout << "environmentLength " << a << "\n";
 		std::cout << "environmentHeight " << d << "\n";
 		std::cout << "environmentWidth " << w << "\n \n \n";
@@ -509,6 +533,16 @@ public:
 				//5.
 				table.free();
 				//method for exporting data
+
+				//the following is only for testing
+				for(int i=0; i<number_of_particles_array[0]; i++){
+					for(int j=0; j<number_of_particles_array[1]; j++){
+						std::cout << particles_1[i][j][3][0] << " " << particles_1[i][j][3][1] << " " << particles_1[i][j][3][2] << std::endl;
+					}
+					std::cout << std::endl;
+					std::cout << std::endl;
+					std::cout << std::endl;
+				}
 			}
 		}
 	}
