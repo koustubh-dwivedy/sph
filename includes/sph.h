@@ -4,26 +4,6 @@
 #include <iostream>
 //#include <CL/cl.h>
 
-float default_kernel(float position[12], float particle[12], float radius);
-void default_kernel_gradient(float position[12], float particle[12], float radius, float* receiver);
-float default_kernel_laplacian(float position[12], float particle[12], float radius);
-float pressure_kernel(float position[12], float particle[12], float radius);
-void pressure_kernel_gradient(float position[12], float particle[12], float radius, float* receiver);
-float pressure_kernel_laplacian(float position[12], float particle[12], float radius);
-float viscosity_kernel(float position[12], float particle[12], float radius);
-void viscosity_kernel_gradient(float position[12], float particle[12], float radius, float* receiver);
-float viscosity_kernel_laplacian(float position[12], float particle[12], float radius);
-
-bool IsPrime(long int number);
-long int NextPrime(long int a);
-
-
-
-
-
-
-
-
 class environment
 {
 private:
@@ -274,7 +254,7 @@ public:
 		// x has been hard-coded as 40 ~= 33 = (6)+(9*2+8)+(1) . IT CAN AND SHOULD BE TWEAKED
 		//reference values for x can be found in the paper
 		//////////////////////////////////////////////////////////////////////////////////////////
-		compact_support_radius = pow(3*volume_of_fluid*40/(4*M_PI*number_of_particles),1/3);
+		compact_support_radius = pow(3*volume_of_fluid*40/(4*M_PI*number_of_particles),1/3.0);
 		//////////////////////////////////////////////////////////////////////////////////////////
 
 		std::cout << "INPUT PARAMS AS OF NOW: \n \n";
@@ -365,7 +345,7 @@ public:
 								float temp_density;
 								float temp_pressure;
 
-								table.particleQuery(particles_1[i][j][k][1], particles_1[i][j][k][2], particles_1[i][j][k][3], nearestNeighbourAdresses, estimatedNumNearestNeighbours, &actualNearestNeighbours, compact_support_radius, 1);
+								table.particleQuery(particles_1[i][j][k][1], particles_1[i][j][k][2], particles_1[i][j][k][3], nearestNeighbourAdresses, estimatedNumNearestNeighbours, &actualNearestNeighbours, compact_support_radius, 0);//changed ij from 1 to 0
 								temp_density = 0;
 								temp_pressure = 0;
 								for(int l=0; l<actualNearestNeighbours; l++){
@@ -537,7 +517,7 @@ public:
 				//the following is only for testing
 				for(int i=0; i<number_of_particles_array[0]; i++){
 					for(int j=0; j<number_of_particles_array[1]; j++){
-						std::cout << particles_1[i][j][3][0] << " " << particles_1[i][j][3][1] << " " << particles_1[i][j][3][2] << std::endl;
+						std::cout << particles_1[i][j][3][1] << " " << particles_1[i][j][3][2] << " " << particles_1[i][j][3][3] << std::endl;
 					}
 					std::cout << std::endl;
 					std::cout << std::endl;

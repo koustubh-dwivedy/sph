@@ -1,5 +1,7 @@
 #include <cstddef>
 #include <math.h>
+#include <iostream>
+using namespace std;
 
 #define P1 73856093
 #define P2 19349663
@@ -32,7 +34,13 @@ public:
 		x_mod = 1 + (long int)(hashKeyX/((float)gridCellSize));//http://matthias-mueller-fischer.ch/publications/tetraederCollision.pdf
 		y_mod = 1 + (long int)(hashKeyY/((float)gridCellSize));//The x, y, z queries have been divided by gridsize and rounded off to next integer
 		z_mod = 1 + (long int)(hashKeyZ/((float)gridCellSize));
-		return (((long int)((x_mod*P1)^(y_mod*P2)^(z_mod*P3)))%size);
+		long int answer = (((long int)((x_mod*P1)^(y_mod*P2)^(z_mod*P3)))%size);
+		if( answer < 0){
+			return -answer;
+		}
+		else{
+			return answer;
+		}
 	}
 
 	void insertElement(float* address, long int value){
@@ -46,12 +54,12 @@ public:
 		new_item->value = address;
 		new_item->nextNode = NULL;
 
-		if(this->boolArray[value] == 0){
-			this->table[value] = new_item;
-			this->boolArray[value] = 1;
+		if(boolArray[value] == 0){
+			table[value] = new_item;
+			boolArray[value] = 1;
 		}
-		else if(this->boolArray[value] == 1){
-			list* temp = this->table[value];
+		else if(boolArray[value] == 1){
+			list* temp = table[value];
 			while(1){
 				if(temp->nextNode == NULL){
 					temp->nextNode = new_item;
@@ -131,11 +139,14 @@ public:
 		for(int i=BB_min_x; i<=BB_max_x; i++){
 			for(int j=BB_min_y; j<=BB_max_y; j++){
 				for(int k=BB_min_z; k<=BB_max_z; k++){
-					hvalue = (((long int)((i*P1)^(j*P2)^(k*P3)))%size);
+					long int hvalue = (((long int)((i*P1)^(j*P2)^(k*P3)))%size);//this was an error earlier (throwing negative values)
+					if(hvalue < 0){
+						hvalue = -hvalue;
+					}
 					if(boolArray[hvalue] == 1){
 						tempNode = table[hvalue];
 						while(1){
-							if(tempNode->nextNode == NULL){								
+							if(tempNode->nextNode == NULL){
 								location = tempNode->value;
 								tempDist = sqrt((x - location[1])*(x - location[1]) + (y - location[2])*(y - location[2]) + (z - location[3])*(z - location[3]));
 								if((tempDist <= compactSupportRadius) && (tempNumNearestNeighbours < estimatedNumNearestNeighbours)){
