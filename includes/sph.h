@@ -2,6 +2,10 @@
 #include "kernels.cpp"
 #include "prime.cpp"
 #include <iostream>
+#include <fstream>
+#include <string>
+#include <sstream>
+#include <cstring>
 //#include <CL/cl.h>
 
 class environment
@@ -513,7 +517,34 @@ public:
 				//5.
 				table.free();
 				//method for exporting data
+				if(t == 0){
+					std::cout << "Writing Data\n";
+				}
+				std::ofstream outfile;
+				std::stringstream sstm;
+				sstm << "output/sphResult_step" << t << ".vtk";
+				std::string name;
+				name = sstm.str();
+				std::cout << name << std::endl;
+				char *cstr = new char[name.length() + 1];
+				std::strcpy(cstr, name.c_str());
+				outfile.open(cstr);
+				outfile << "# vtk DataFile Version 2.0\n";
+				outfile << "SPH Data\n";
+				outfile << "ASCII\n";
+				outfile << "DATASET POLYDATA\n";
+				outfile << "POINTS " << number_of_particles << " float\n";
+				for(int i=0; i<number_of_particles_array[0]; i++){
+					for (int j=0; j<number_of_particles_array[1]; j++){
+						for(int k=0; k<number_of_particles_array[2]; k++){
+							outfile << (float)1.0*particles_1[i][j][k][1] << " " << (float)1.0*particles_1[i][j][k][2] << " " << (float)1.0*particles_1[i][j][k][3] << "\n";
+						}
+					}
+				}
 
+			  	outfile.close();
+
+				/*
 				//the following is only for testing
 				for(int i=0; i<number_of_particles_array[0]; i++){
 					for(int j=0; j<number_of_particles_array[1]; j++){
@@ -523,6 +554,7 @@ public:
 					std::cout << std::endl;
 					std::cout << std::endl;
 				}
+				*/
 			}
 		}
 	}

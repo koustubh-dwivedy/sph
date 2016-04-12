@@ -1,0 +1,10 @@
+# vtk DataFile Version 2.0
+Volume example
+ASCII
+DATASET POLYDATA
+POINTS 5 float
+1.0 1.0 1.0
+2.0 2.0 2.0
+1.0 2.0 3.0
+10.0 1.0 0
+2.0 4.0 6.0
