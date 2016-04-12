@@ -34,7 +34,7 @@ private:
 	float mass;
 	long int table_size;
 	float**** particles;
-	
+
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//particles_1 is the matrix which stores the content of (time t) iteration. (it's a local copy)
 	float**** particles_1;//this is the copy of particles with additional space for storing mass, density, force etc.
@@ -294,7 +294,7 @@ public:
 	}
 	void isLiquid(bool a){
 
-		is_liquid = a;		
+		is_liquid = a;
 	}
 	void environmentFree(void){
 		/****freeing up memory*******/
@@ -345,7 +345,7 @@ public:
 								float temp_density;
 								float temp_pressure;
 
-								table.particleQuery(particles_1[i][j][k][1], particles_1[i][j][k][2], particles_1[i][j][k][3], nearestNeighbourAdresses, estimatedNumNearestNeighbours, &actualNearestNeighbours, compact_support_radius, 0);//changed ij from 1 to 0
+								table.particleQuery(particles_1[i][j][k][1], particles_1[i][j][k][2], particles_1[i][j][k][3], nearestNeighbourAdresses, estimatedNumNearestNeighbours, &actualNearestNeighbours, compact_support_radius, 0);//changed ij from 1 to 0 while testing
 								temp_density = 0;
 								temp_pressure = 0;
 								for(int l=0; l<actualNearestNeighbours; l++){
@@ -379,9 +379,9 @@ public:
 									pressure_kernel_gradient(nearestNeighbourAdresses[l], particles_1[i][j][k], compact_support_radius, receiver);
 									float temp_var = 0;
 									temp_var = mass*((nearestNeighbourAdresses[l][8]/((float)((nearestNeighbourAdresses[l][7])*(nearestNeighbourAdresses[l][7])))) + (particles_1[i][j][k][8]/((float)(particles_1[i][j][k][7])*(particles_1[i][j][k][7]))));
-									temp_force_x = (temp_force_x + receiver[0]*temp_var)*(-particles_1[i][j][k][7]);
-									temp_force_y = (temp_force_y + receiver[1]*temp_var)*(-particles_1[i][j][k][7]);
-									temp_force_z = (temp_force_z + receiver[2]*temp_var)*(-particles_1[i][j][k][7]);
+									temp_force_x = temp_force_x + (receiver[0]*temp_var)*(-particles_1[i][j][k][7]);
+									temp_force_y = temp_force_y + (receiver[1]*temp_var)*(-particles_1[i][j][k][7]);
+									temp_force_z = temp_force_z + (receiver[2]*temp_var)*(-particles_1[i][j][k][7]);
 									//
 									//the following is viscous force
 									temp_var = viscosityCoeff*(mass/((float)nearestNeighbourAdresses[l][7]))*viscosity_kernel_laplacian(nearestNeighbourAdresses[l], particles_1[i][j][k], compact_support_radius);
@@ -403,7 +403,7 @@ public:
 									//the following is gravity
 									temp_force_z = temp_force_z + particles_1[i][j][k][7]*gravity;
 									//
-									float surf_norm_magn = sqrt(surf_norm_x*surf_norm_x + surf_norm_y*surf_norm_y + surf_norm_z+surf_norm_z);
+									float surf_norm_magn = sqrt(surf_norm_x*surf_norm_x + surf_norm_y*surf_norm_y + surf_norm_z*surf_norm_z);//this was another hell of an error "who writes a + in place of a *????????"
 									for(int l=0; l<actualNearestNeighbours; l++){
 										float temp_var = (mass/(nearestNeighbourAdresses[l][7]))*default_kernel_laplacian(nearestNeighbourAdresses[l], particles_1[i][j][k], compact_support_radius);
 										temp_force_x = temp_force_x + (-surfaceTensionCoeff)*(surf_norm_x/((float)surf_norm_magn))*temp_var;
@@ -440,8 +440,8 @@ public:
 									temp_accn_z = particles_1[i][j][k][11]/((float)particles_1[i][j][k][7]);
 
 									particles_1[i][j][k][4] = particles_1[i][j][k][4] - 0.5*time_step*temp_accn_x;
-									particles_1[i][j][k][5] = particles_1[i][j][k][5] - 0.5*time_step*temp_accn_x;
-									particles_1[i][j][k][6] = particles_1[i][j][k][6] - 0.5*time_step*temp_accn_x;
+									particles_1[i][j][k][5] = particles_1[i][j][k][5] - 0.5*time_step*temp_accn_y;
+									particles_1[i][j][k][6] = particles_1[i][j][k][6] - 0.5*time_step*temp_accn_z;
 								}
 							}
 						}
@@ -460,8 +460,8 @@ public:
 									temp_accn_z = particles_1[i][j][k][11]/((float)particles_1[i][j][k][7]);
 
 									particles_1[i][j][k][4] = particles_1[i][j][k][4] + time_step*temp_accn_x;
-									particles_1[i][j][k][5] = particles_1[i][j][k][5] + time_step*temp_accn_x;
-									particles_1[i][j][k][6] = particles_1[i][j][k][6] + time_step*temp_accn_x;
+									particles_1[i][j][k][5] = particles_1[i][j][k][5] + time_step*temp_accn_y;
+									particles_1[i][j][k][6] = particles_1[i][j][k][6] + time_step*temp_accn_z;
 
 									particles_1[i][j][k][1] = particles_1[i][j][k][1] + time_step*particles_1[i][j][k][4];
 									particles_1[i][j][k][2] = particles_1[i][j][k][2] + time_step*particles_1[i][j][k][5];
