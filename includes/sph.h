@@ -350,7 +350,7 @@ public:
 								float temp_pressure;
 
 								table.particleQuery(particles_1[i][j][k][1], particles_1[i][j][k][2], particles_1[i][j][k][3], nearestNeighbourAdresses, estimatedNumNearestNeighbours, &actualNearestNeighbours, compact_support_radius, 0);//changed ij from 1 to 0 while testing
-								temp_density = 0;
+								temp_density = density;
 								temp_pressure = 0;
 								for(int l=0; l<actualNearestNeighbours; l++){
 									temp_density = temp_density + mass*default_kernel(nearestNeighbourAdresses[l], particles_1[i][j][k], compact_support_radius);
@@ -522,7 +522,7 @@ public:
 				}
 				std::ofstream outfile;
 				std::stringstream sstm;
-				sstm << "output/sphResult_step" << t << ".vtk";
+				sstm << "output/sphResult_step" << (int)(t/time_step) << ".vtk";
 				std::string name;
 				name = sstm.str();
 				std::cout << name << std::endl;

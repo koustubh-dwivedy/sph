@@ -25,8 +25,16 @@
 ////
 
 #include "includes/sph.h"
+#include <time.h> //for measuring time
 
 int main(int argc, char **argv){
+	clock_t begin, end;
+	double time_spent;
+
+	begin = clock();
+
+
+
 	int part[3] = {4, 10, 6};//THIS IS NOT NUMBER OF PARTICLES, BUT THE DIMENSION OF particles ARRAY. (WHICH TURNS OUT TO BE EQUAL TO NUMBER OF PARTICLES)
 	float**** particles;
 	//Define your particles here
@@ -61,15 +69,15 @@ int main(int argc, char **argv){
 	environment environ1;
 	environ1.setGravity(9.81);
 	environ1.isLiquid(1);
-	environ1.setTimeStep(1);//initially this was 0.01
-	environ1.setTimeDuration(5);
+	environ1.setTimeStep(0.01);//initially this was 0.01
+	environ1.setTimeDuration(10);
 	environ1.setTemperature(283.15);
 	environ1.setAtmosphericPressure(101325);
 	environ1.setDensity(1000);
 	environ1.numParticles(4*10*6);//AT PRESENT, IT IS LIMITED BY MAXIMUM VALUE OF int
 	environ1.fluidVolume(4.0*10.0*6.0);//THIS IS THE ACTUAL OCCUPIED VOLUME OF FLUID (x*y*z)
 	environ1.setBuoyancyDiffusionCoeff(0);
-	environ1.setViscosityCoeff(3.5);
+	environ1.setViscosityCoeff(3.5);//was 3.5 earlier
 	environ1.setSurfaceTensionCoeff(0.0728);
 	environ1.setSurfaceTensionThresholdCoeff(7.065);
 	environ1.setGasStiffnessCoeff(3.0);
@@ -83,4 +91,11 @@ int main(int argc, char **argv){
 	environ1.envInit();
 	environ1.simulate();
 	environ1.environmentFree();
+
+
+
+	cout << endl << endl << endl << endl;
+	end = clock();
+	time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
+	cout << "Time Taken ->" << time_spent << endl;
 }
