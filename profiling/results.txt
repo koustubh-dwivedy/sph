@@ -1,0 +1,16 @@
+PARTICLE SIZE 240
+g++, cout on, 22.308
+g++ -O3, cout on, 16.6683
+g++, cout off, 21.6615
+g++ -O3, cout off, 15.9925
+icpc cout on, 1.99686
+icpc, cout off, 1.66339
+icpc -O3, cout on, 1.9912
+icpc -O3, cout off, 1.66647
+
+PARTICLE SIZE 2400
+g++, 382
+icpc, 83.38
+
+PARTICLE SIZE 2400
+g++, 648.791

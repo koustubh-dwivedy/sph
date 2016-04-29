@@ -35,7 +35,7 @@ int main(int argc, char **argv){
 
 
 
-	int part[3] = {4, 10, 6};//THIS IS NOT NUMBER OF PARTICLES, BUT THE DIMENSION OF particles ARRAY. (WHICH TURNS OUT TO BE EQUAL TO NUMBER OF PARTICLES)
+	int part[3] = {40, 10, 6};//THIS IS NOT NUMBER OF PARTICLES, BUT THE DIMENSION OF particles ARRAY. (WHICH TURNS OUT TO BE EQUAL TO NUMBER OF PARTICLES IN THIS PARTICULAR CASE)
 	float**** particles;
 	//Define your particles here
 	/********

@@ -337,6 +337,7 @@ public:
 
 
 				//1.
+				#pragma omp parallel for
 				for(int i=0; i<number_of_particles_array[0]; i++){
 					for(int j=0; j<number_of_particles_array[1]; j++){
 						for(int k=0; k<number_of_particles_array[2]; k++){
@@ -363,6 +364,7 @@ public:
 					}
 				}
 				//2. and 3.
+				#pragma omp parallel for
 				for(int i=0; i<number_of_particles_array[0]; i++){
 					for(int j=0; j<number_of_particles_array[1]; j++){
 						for(int k=0; k<number_of_particles_array[2]; k++){
@@ -517,6 +519,7 @@ public:
 				//5.
 				table.free();
 				//method for exporting data
+				
 				if(t == 0){
 					std::cout << "Writing Data\n";
 				}
@@ -543,6 +546,7 @@ public:
 				}
 
 			  	outfile.close();
+				
 
 				/*
 				//the following is only for testing

@@ -1,3 +1,1 @@
-2. Implementation of ij argument in particleQuery function might pose problems. Keep it in mind.
-6. Create a method to write out vtk files
 8. Is your coordinate system compatible with paper's for forces? (lines 434 onwards in sph.h)
