@@ -25,7 +25,7 @@ private:
 	int estimatedNumNearestNeighbours;
 	int number_of_particles;
 	int* number_of_particles_array;
-	// this is an array of 3 int's which specify number of [articles in each dimension.
+	// this is an array of 3 int's which specify number of particles in each dimension.
 	// they may or may not be completely filled.
 	// another tag of "isParticle" needs to be added in the ****particles to specify if that point is a particle or not.
 	// enter number_of_particles_array as [x, y, z]
